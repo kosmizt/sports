@@ -1,0 +1,501 @@
+import numpy as np
+import pandas as pd
+import re
+
+raw_text = """
+1ª rodada
+Internacional 2 x 1 Bahia
+Criciúma 1 x 1 Juventude
+Fluminense 2 x 2 Red Bull Bragantino
+São Paulo 1 x 2 Fortaleza
+Atlético-GO 1 x 2 Flamengo
+Vasco 2 x 1 Grêmio
+Corinthians 0 x 0 Atlético-MG
+Athletico-PR 4 x 0 Cuiabá
+Cruzeiro 3 x 2 Botafogo
+Vitória 0 x 1 Palmeiras
+2ª rodada
+Bahia 2 x 1 Fluminense
+Grêmio 2 x 0 Athletico-PR
+Atlético-MG 1 x 1 Criciúma
+Red Bull Bragantino 2 x 1 Vasco
+Fortaleza 1 x 1 Cruzeiro
+Juventude 2 x 0 Corinthians
+Palmeiras 0 x 1 Internacional
+Flamengo 2 x 1 São Paulo
+Botafogo 1 x 0 Atlético-GO
+Cuiabá 0 x 0 Vitória
+3ª rodada
+Fluminense 2 x 1 Vasco
+Grêmio 1 x 0 Cuiabá
+Red Bull Bragantino 1 x 0 Corinthians
+Atlético-MG 3 x 0 Cruzeiro
+Vitória 2 x 2 Bahia
+Palmeiras 0 x 0 Flamengo
+Athletico-PR 1 x 0 Internacional
+Botafogo 5 x 1 Juventude
+Atlético-GO 0 x 3 São Paulo
+Criciúma 1 x 1 Fortaleza
+4ª rodada
+Vasco 0 x 4 Criciúma
+Cuiabá 0 x 3 Atlético-MG
+Bahia 1 x 0 Grêmio
+Flamengo 0 x 2 Botafogo
+Cruzeiro 3 x 1 Vitória
+Corinthians 3 x 0 Fluminense
+Fortaleza 1 x 1 Red Bull Bragantino
+Juventude 1 x 1 Athletico-PR
+Internacional 1 x 1 Atlético-GO
+São Paulo 0 x 0 Palmeiras
+5ª rodada
+Fluminense 2 x 2 Atlético-MG
+Red Bull Bragantino 1 x 1 Flamengo
+Corinthians 0 x 0 Fortaleza
+Vitória 1 x 3 São Paulo
+Athletico-PR 1 x 0 Vasco
+Botafogo 1 x 2 Bahia
+Cuiabá 0 x 2 Palmeiras
+Juventude 1 x 0 Atlético-GO
+Cruzeiro 0 x 0 Internacional
+Grêmio 1 x 2 Criciúma
+6ª rodada
+Flamengo 2 x 0 Corinthians
+Vasco 2 x 1 Vitória
+Atlético-GO 0 x 1 Cruzeiro
+Palmeiras 0 x 2 Athletico-PR
+Fortaleza 1 x 1 Botafogo
+Bahia 1 x 0 Red Bull Bragantino
+São Paulo 2 x 1 Fluminense
+Criciúma 2 x 5 Cuiabá
+Atlético-MG 2 x 1 Grêmio
+Internacional 2 x 1 Juventude
+7ª rodada
+Vitória 0 x 2 Atlético-GO
+Grêmio 0 x 2 Red Bull Bragantino
+Cuiabá 0 x 1 Internacional
+Fluminense 1 x 1 Juventude
+Corinthians 0 x 1 Botafogo
+Vasco 1 x 6 Flamengo
+Criciúma 1 x 2 Palmeiras
+Atlético-MG 1 x 1 Bahia
+Fortaleza 1 x 0 Athletico-PR
+São Paulo 2 x 0 Cruzeiro
+8ª rodada
+Juventude 1 x 1 Vitória
+Atlético-GO 2 x 2 Corinthians
+Botafogo 1 x 0 Fluminense
+Red Bull Bragantino 1 x 2 Atlético-MG
+Cruzeiro 2 x 1 Cuiabá
+Athletico-PR 3 x 1 Criciúma
+Flamengo 2 x 1 Grêmio
+Internacional 0 x 0 São Paulo
+Palmeiras 2 x 0 Vasco
+Bahia 1 x 0 Fortaleza
+9ª rodada
+Red Bull Bragantino 2 x 1 Juventude
+Fluminense 1 x 2 Atlético-GO
+Vitória 2 x 1 Internacional
+Athletico-PR 1 x 1 Flamengo
+Corinthians 2 x 2 São Paulo
+Criciúma 2 x 2 Bahia
+Grêmio 1 x 2 Botafogo
+Vasco 0 x 0 Cruzeiro
+Cuiabá 5 x 0 Fortaleza
+Atlético-MG 0 x 4 Palmeiras
+10ª rodada
+Botafogo 1 x 1 Athletico-PR
+Atlético-GO 1 x 2 Criciúma
+Fortaleza 1 x 0 Grêmio
+Juventude 2 x 0 Vasco
+São Paulo 0 x 1 Cuiabá
+Inter 1 x 0 Corinthians
+Cruzeiro 2 x 0 Fluminense
+Vitória 4 x 2 Atlético-MG
+Flamengo 2 x 1 Bahia
+Palmeiras 2 x 1 Bragantino
+11ª rodada
+Criciúma 2 x 1 Botafogo
+Grêmio 0 x 1 Inter
+Cuiabá 0 x 0 Atlético-GO
+Vasco 4 x 1 São Paulo
+Fluminense 0 x 1 Flamengo
+Athletico-PR 1 x 1 Corinthians
+Bahia 4 x 1 Cruzeiro
+Palmeiras 3 x 1 Juventude
+Bragantino 2 x 1 Vitória
+Atlético-MG 1 x 1 Fortaleza
+12ª rodada
+Cruzeiro 2 x 0 Athletico-PR
+Botafogo 2 x 1 Bragantino
+Corinthians 1 x 1 Cuiabá
+Juventude 2 x 1 Flamengo
+Atlético-GO 1 x 1 Grêmio
+Bahia 2 x 1 Vasco
+Inter 1 x 1 Atlético-MG
+Fortaleza 3 x 0 Palmeiras
+Fluminense 0 x 1 Vitória
+São Paulo 2 x 1 Criciúma
+13ª rodada
+Cuiabá 1 x 1 Bragantino
+Vasco 1 x 1 Botafogo
+Atlético-MG 1 x 1 Atlético-GO
+São Paulo 3 x 1 Bahia
+Grêmio 1 x 0 Fluminense
+Fortaleza 2 x 1 Juventude
+Vitória 0 x 1 Athletico-PR
+Flamengo 2 x 1 Cruzeiro
+Criciúma 1 x 1 Inter
+Palmeiras 2 x 0 Corinthians
+14ª rodada
+Bragantino 3 x 1 Atlético-GO
+Cuiabá 1 x 2 Botafogo
+Criciúma 1 x 0 Cruzeiro
+Vasco 2 x 0 Fortaleza
+Athletico-PR 1 x 2 São Paulo
+Atlético-MG 2 x 4 Flamengo
+Grêmio 2 x 2 Palmeiras
+Bahia 2 x 0 Juventude
+Corinthians 3 x 2 Vitória
+Fluminense 1 x 1 Inter
+15ª rodada
+Flamengo 1 x 1 Cuiabá
+São Paulo 2 x 0 Bragantino
+Cruzeiro 3 x 0 Corinthians
+Juventude 3 x 0 Grêmio
+Palmeiras 2 x 0 Bahia
+Fortaleza 1 x 0 Fluminense
+Botafogo 3 x 0 Atlético-MG
+Vitória 2 x 1 Criciúma
+Atlético-GO 1 x 2 Athletico-PR
+Inter 1 x 2 Vasco
+16ª rodada
+Grêmio 0 x 2 Cruzeiro
+Vasco 2 x 0 Corinthians
+Athletico-PR 1 x 3 Bahia
+Atlético-MG 2 x 1 São Paulo
+Vitória 0 x 1 Botafogo
+Flamengo 1 x 2 Fortaleza
+Palmeiras 3 x 1 Atlético-GO
+Criciúma 1 x 1 Fluminense
+Cuiabá 0 x 0 Juventude
+Bragantino 2 x 2 Inter
+17ª rodada
+Cruzeiro 2 x 1 Bragantino
+Bahia 1 x 2 Cuiabá
+Corinthians 2 x 1 Criciúma
+Juventude 1 x 1 Atlético-MG
+Botafogo 1 x 0 Palmeiras
+São Paulo 1 x 0 Grêmio
+Fortaleza 3 x 1 Vitória
+Atlético-GO 0 x 1 Vasco
+Inter 1 x 1 Flamengo
+Fluminense 1 x 0 Athletico-PR
+18ª rodada
+Flamengo 2 x 1 Criciúma
+Botafogo 1 x 0 Inter
+Palmeiras 2 x 0 Cruzeiro
+Grêmio 2 x 0 Vitória
+Atlético-MG 2 x 0 Vasco
+Bahia 0 x 1 Corinthians
+Bragantino 1 x 0 Athletico-PR
+Fortaleza 3 x 1 Atlético-GO
+Cuiabá 0 x 1 Fluminense
+Juventude 0 x 0 São Paulo
+19ª rodada
+Cruzeiro 2 x 0 Juventude
+Vitória 1 x 2 Flamengo
+São Paulo 2 x 2 Botafogo
+Atlético-GO 1 x 1 Bahia
+Fluminense 1 x 0 Palmeiras
+Corinthians 2 x 2 Grêmio
+Inter 2 x 1 Fortaleza
+Vasco 1 x 0 Cuiabá
+Athletico-PR 1 x 0 Atlético-MG
+Criciúma 1 x 0 Bragantino
+20ª rodada
+Palmeiras 0 x 2 Vitória
+Juventude 1 x 2 Criciúma
+Bahia 1 x 1 Internacional
+Botafogo 0 x 3 Cruzeiro
+Fortaleza 1 x 0 São Paulo
+Grêmio 1 x 0 Vasco
+Atlético-MG 2 x 1 Corinthians
+Flamengo 2 x 0 Atlético-GO
+Red Bull Bragantino 0 x 1 Fluminense
+Cuiabá 1 x 2 Athletico-PR
+21ª rodada
+Vitória 1 x 0 Cuiabá
+Vasco 2 x 2 Red Bull Bragantino
+São Paulo 1 x 0 Flamengo
+Atlético-GO 1 x 4 Botafogo
+Criciúma 2 x 1 Atlético-MG
+Corinthians 1 x 1 Juventude
+Internacional 1 x 1 Palmeiras
+Fluminense 1 x 0 Bahia
+Athletico-PR 0 x 2 Grêmio
+Cruzeiro 1 x 2 Fortaleza
+22ª rodada
+Cruzeiro 0 x 0 Atlético-MG
+Vasco 2 x 0 Fluminense
+Corinthians 1 x 1 Red Bull Bragantino
+Fortaleza 1 x 0 Criciúma
+Cuiabá 1 x 3 Grêmio
+Juventude 3 x 2 Botafogo
+Internacional 2 x 2 Athletico-PR
+Bahia 2 x 0 Vitória
+Flamengo 1 x 1 Palmeiras
+São Paulo 1 x 0 Atlético-GO
+23ª rodada
+Grêmio 0 x 2 Bahia
+Atlético-MG 1 x 1 Cuiabá
+Vitória 2 x 2 Cruzeiro
+Fluminense 0 x 0 Corinthians
+Botafogo 4 x 1 Flamengo
+Palmeiras 2 x 1 São Paulo
+Red Bull Bragantino 1 x 2 Fortaleza
+Athletico-PR 1 x 2 Juventude
+Atlético-GO 1 x 0 Internacional
+Criciúma 2 x 2 Vasco
+24ª rodada
+Atlético-GO 2 x 1 Juventude
+Palmeiras 5 x 0 Cuiabá
+Atlético-MG 0 x 2 Fluminense
+Internacional 1 x 0 Cruzeiro
+Bahia 0 x 0 Botafogo
+Flamengo 2 x 1 Red Bull Bragantino
+São Paulo 2 x 1 Vitória
+Fortaleza 1 x 0 Corinthians
+Criciúma 0 x 1 Grêmio
+Vasco 2 x 1 Athletico-PR
+25ª rodada
+Cuiabá 2 x 1 Criciúma
+Botafogo 2 x 0 Fortaleza
+Grêmio 2 x 3 Atlético-MG
+Cruzeiro 3 x 1 Atlético-GO
+Vitória 0 x 1 Vasco
+Fluminense 2 x 0 São Paulo
+Corinthians 2 x 1 Flamengo
+Red Bull Bragantino 2 x 1 Bahia
+Athletico-PR 0 x 2 Palmeiras
+Juventude 1 x 3 Internacional
+26ª rodada
+Internacional 3 x 0 Cuiabá
+Cruzeiro 0 x 1 São Paulo
+Bahia 3 x 0 Atlético-MG
+Flamengo 1 x 1 Vasco
+Botafogo 2 x 1 Corinthians
+Palmeiras 5 x 0 Criciúma
+Red Bull Bragantino 2 x 2 Grêmio
+Athletico-PR 1 x 1 Fortaleza
+Atlético-GO 0 x 2 Vitória
+Juventude 2 x 1 Fluminense
+27ª rodada
+Grêmio 3 x 2 Flamengo
+Atlético-MG 3 x 0 Red Bull Bragantino
+Vitória 1 x 0 Juventude
+Fluminense 0 x 1 Botafogo
+Vasco 0 x 1 Palmeiras
+Corinthians 3 x 0 Atlético-GO
+São Paulo 1 x 3 Internacional
+Fortaleza 4 x 1 Bahia
+Cuiabá 0 x 0 Cruzeiro
+Criciúma 0 x 0 Athletico-PR
+28ª rodada
+Palmeiras 2 x 1 Atlético-MG
+Botafogo 0 x 0 Grêmio
+Internacional 3 x 1 Vitória
+Cruzeiro 1 x 1 Vasco
+Bahia 1 x 0 Criciúma
+Flamengo 1 x 0 Athletico-PR
+São Paulo 3 x 1 Corinthians
+Fortaleza 1 x 0 Cuiabá
+Atlético-GO 1 x 0 Fluminense
+Juventude 1 x 1 Red Bull Bragantino
+29ª rodada
+Grêmio 3 x 1 Fortaleza
+Atlético-MG 2 x 2 Vitória
+Bahia 0 x 2 Flamengo
+Fluminense 1 x 0 Cruzeiro
+Vasco 1 x 1 Juventude
+Corinthians 2 x 2 Internacional
+Red Bull Bragantino 0 x 0 Palmeiras
+Athletico-PR 0 x 1 Botafogo
+Cuiabá 2 x 0 São Paulo
+Criciúma 2 x 0 Atlético-GO
+30ª rodada
+São Paulo 3 x 0 Vasco
+Fortaleza 1 x 1 Atlético-MG
+Corinthians 5 x 2 Athletico-PR
+Flamengo 0 x 2 Fluminense
+Atlético-GO 0 x 0 Cuiabá
+Botafogo 1 x 1 Criciúma
+Cruzeiro 1 x 1 Bahia
+Internacional 1 x 0 Grêmio
+Vitória 1 x 0 Red Bull Bragantino
+Juventude 3 x 5 Palmeiras
+31ª rodada
+Grêmio 3 x 1 Atlético-GO
+Atlético-MG 1 x 3 Internacional
+Vitória 2 x 1 Fluminense
+Flamengo 4 x 2 Juventude
+Vasco 3 x 2 Bahia
+Palmeiras 2 x 2 Fortaleza
+Red Bull Bragantino 0 x 1 Botafogo
+Athletico-PR 3 x 0 Cruzeiro
+Cuiabá 0 x 1 Corinthians
+Criciúma 1 x 1 São Paulo
+32ª rodada
+Internacional 2 x 0 Criciúma
+Cruzeiro 0 x 1 Flamengo
+Bahia 0 x 3 São Paulo
+Fluminense 2 x 2 Grêmio
+Botafogo 3 x 0 Vasco
+Corinthians 2 x 0 Palmeiras
+Red Bull Bragantino 0 x 0 Cuiabá
+Athletico-PR 1 x 2 Vitória
+Atlético-GO 1 x 0 Atlético-MG
+Juventude 0 x 3 Fortaleza
+33ª rodada
+Internacional 2 x 0 Fluminense
+Cruzeiro 2 x 1 Criciúma
+Vitória 1 x 2 Corinthians
+Flamengo 0 x 0 Atlético-MG
+Botafogo 0 x 0 Cuiabá
+Palmeiras 1 x 0 Grêmio
+São Paulo 2 x 1 Athletico-PR
+Fortaleza 3 x 0 Vasco
+Atlético-GO 0 x 0 Red Bull Bragantino
+Juventude 2 x 1 Bahia
+34ª rodada
+Corinthians 2 x 1 Cruzeiro
+Athletico-PR 2 x 0 Atlético-GO
+Red Bull Bragantino 1 x 1 São Paulo
+Criciúma 0 x 1 Vitória
+Grêmio 2 x 2 Juventude
+Atlético-MG 0 x 0 Botafogo
+Bahia 1 x 2 Palmeiras
+Cuiabá 1 x 2 Flamengo
+Fluminense 2 x 2 Fortaleza
+Vasco 0 x 1 Internacional
+35ª rodada
+Internacional 4 x 1 Red Bull Bragantino
+Bahia 1 x 1 Athletico-PR
+Botafogo 1 x 1 Vitória
+Corinthians 3 x 1 Vasco
+São Paulo 2 x 2 Atlético-MG
+Fortaleza 0 x 0 Flamengo
+Atlético-GO 0 x 1 Palmeiras
+Juventude 1 x 1 Cuiabá
+Cruzeiro 1 x 1 Grêmio
+Fluminense 0 x 0 Criciúma
+36ª rodada
+Grêmio 2 x 1 São Paulo
+Atlético-MG 2 x 3 Juventude
+Vitória 2 x 0 Fortaleza
+Flamengo 3 x 2 Internacional
+Vasco 2 x 2 Atlético-GO
+Palmeiras 1 x 3 Botafogo
+Red Bull Bragantino 1 x 1 Cruzeiro
+Athletico-PR 1 x 1 Fluminense
+Cuiabá 1 x 2 Bahia
+Criciúma 2 x 4 Corinthians
+37ª rodada
+Internacional 0 x 1 Botafogo
+Cruzeiro 1 x 2 Palmeiras
+Vitória 1 x 1 Grêmio
+Fluminense 1 x 0 Cuiabá
+Vasco 2 x 0 Atlético-MG
+Corinthians 3 x 0 Bahia
+São Paulo 1 x 2 Juventude
+Athletico-PR 0 x 1 Red Bull Bragantino
+Atlético-GO 3 x 1 Fortaleza
+Criciúma 0 x 3 Flamengo
+38ª rodada
+Grêmio 0 x 3 Corinthians
+Atlético-MG 1 x 0 Athletico-PR
+Bahia 2 x 0 Atlético-GO
+Flamengo 2 x 2 Vitória
+Botafogo 2 x 1 São Paulo
+Palmeiras 0 x 1 Fluminense
+Red Bull Bragantino 5 x 1 Criciúma
+Fortaleza 3 x 0 Internacional
+Cuiabá 1 x 2 Vasco
+Juventude 0 x 1 Cruzeiro
+"""
+
+rows = []
+current_round = None
+
+for line in raw_text.splitlines():
+    line = line.strip()
+    if not line:
+        continue
+    m_round = re.match(r"(\d+)[ªa]* rodada", line)
+    if m_round:
+        current_round = int(m_round.group(1))
+        continue
+    m_game = re.match(r"(.+?) (\d+) x (\d+) (.+)", line)
+    if m_game:
+        time_casa = m_game.group(1).strip()
+        gols_casa = int(m_game.group(2))
+        gols_fora = int(m_game.group(3))
+        time_fora = m_game.group(4).strip()
+        if gols_casa > gols_fora:
+            resultado = time_casa
+        elif gols_fora > gols_casa:
+            resultado = time_fora
+        else:
+            resultado = "Empate"
+        rows.append([current_round, time_casa, time_fora, gols_casa, gols_fora, resultado])
+
+df = pd.DataFrame(rows, columns=["rodada", "time_casa", "time_visitante", "gols_casa", "gols_fora", "resultado"])
+df.to_csv("brasileirao_2024.csv", index=False, encoding="utf-8-sig")
+
+
+def get_brasileirao_matches(csv_path="brasileirao_2024.csv"):
+    df = pd.read_csv(csv_path)
+    df.rename(columns={
+        "rodada": "Round",
+        "time_casa": "Home",
+        "time_visitante": "Away",
+        "gols_casa": "hg",
+        "gols_fora": "ag"
+    }, inplace=True)
+    df = df[["Round", "Home", "Away", "hg", "ag"]].sort_values("Round").reset_index(drop=True)
+    return df
+
+
+def update_elo(ratings, home, away, hg, ag, k=30, hfa=100):
+    rh, ra = ratings.get(home, 1500), ratings.get(away, 1500)
+    expected_h = 1 / (1 + 10 ** ((ra - (rh + hfa)) / 400))
+    expected_a = 1 - expected_h
+
+    if hg > ag:
+        sh, sa = 1, 0
+    elif hg < ag:
+        sh, sa = 0, 1
+    else:
+        sh, sa = 0.5, 0.5
+
+    ratings[home] = rh + k * (sh - expected_h)
+    ratings[away] = ra + k * (sa - expected_a)
+    return ratings
+
+
+def compute_elo_by_round(matches):
+    ratings = {}
+    for _, match in matches.iterrows():
+        ratings = update_elo(ratings, match["Home"], match["Away"], match["hg"], match["ag"])
+    df = pd.DataFrame(list(ratings.items()), columns=["Team", "Elo"])
+    df.sort_values("Elo", ascending=False, inplace=True)
+    df.reset_index(drop=True, inplace=True)
+    return df
+
+
+if __name__ == "__main__":
+    matches = get_brasileirao_matches()
+    elo_table = compute_elo_by_round(matches)
+    print("\n📊 Elo Ratings after latest round:")
+    print(elo_table.to_string(index=False, formatters={"Elo": "{:.1f}".format}))
+
+# a terminar: gerar tabela de pontos corridos e comparar a posição com a do ranking de elo. alimentar um csv histórico (desafio: resolver os times rebaixados)
