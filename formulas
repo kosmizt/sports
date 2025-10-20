@@ -109,3 +109,60 @@ def gol(g, t):
 
     prob = 1 - (1-g)**t
     return prob
+
+# K-factor sensitivity demo for Elo in football
+import math
+import pandas as pd
+import matplotlib.pyplot as plt
+
+def expected_score(r_a, r_b, hfa=0):
+    return 1 / (1 + 10 ** (((r_b) - (r_a + hfa)) / 400))
+
+def update(r_a, r_b, score_a, k=20, hfa=0):
+    ea = expected_score(r_a, r_b, hfa=hfa)
+    eb = 1 - ea
+    r_a_new = r_a + k * (score_a - ea)
+    r_b_new = r_b + k * ((1 - score_a) - eb)
+    return r_a_new, r_b_new
+
+def run_scenario(name, r_a0, r_b0, results, k_values, hfa=0):
+    out_rows = []
+    line_data = {k: [r_a0] for k in k_values}
+    for k in k_values:
+        r_a, r_b = r_a0, r_b0
+        for i, res in enumerate(results, start=1):
+            if res == 'A':
+                score_a = 1.0
+            elif res == 'B':
+                score_a = 0.0
+            else:
+                score_a = 0.5
+            r_a, r_b = update(r_a, r_b, score_a, k=k, hfa=hfa)
+            out_rows.append({
+                "Scenario": name,
+                "Match #": i,
+                "K": k,
+                "A_rating_after": r_a,
+                "B_rating_after": r_b,
+                "Result": res
+            })
+            line_data[k].append(r_a)
+    df = pd.DataFrame(out_rows)
+    plt.figure()
+    for k in k_values:
+        plt.plot(range(0, len(results)+1), line_data[k], label=f"K={k}")
+    plt.title(f"Elo trajectory for {name}")
+    plt.xlabel("Matches played")
+    plt.ylabel("Team A rating")
+    plt.legend()
+    plt.tight_layout()
+    return df
+
+k_values = [10, 20, 30, 40, 60]
+
+df1 = run_scenario(
+    name="1500 vs 1500",
+    r_a0=1500, r_b0=1500,
+    results=['A','A','D','B'],
+    k_values=k_values, hfa=0
+)
