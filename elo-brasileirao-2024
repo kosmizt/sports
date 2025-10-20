@@ -426,6 +426,16 @@ Juventude 0 x 1 Cruzeiro
 rows = []
 current_round = None
 
+ALIASES = {
+    "Inter": "Internacional",
+    "Bragantino": "Red Bull Bragantino",
+}
+
+
+def norm(team: str) -> str:
+    team = team.strip()
+    return ALIASES.get(team, team)
+
 for line in raw_text.splitlines():
     line = line.strip()
     if not line:
@@ -485,17 +495,83 @@ def update_elo(ratings, home, away, hg, ag, k=30, hfa=100):
 def compute_elo_by_round(matches):
     ratings = {}
     for _, match in matches.iterrows():
-        ratings = update_elo(ratings, match["Home"], match["Away"], match["hg"], match["ag"])
+        home = norm(match["Home"])
+        away = norm(match["Away"])
+        ratings = update_elo(ratings, home, away, match["hg"], match["ag"])
+
     df = pd.DataFrame(list(ratings.items()), columns=["Team", "Elo"])
     df.sort_values("Elo", ascending=False, inplace=True)
     df.reset_index(drop=True, inplace=True)
+    df["Pos"] = df.index + 1
+    df = df[["Pos", "Team", "Elo"]]
     return df
 
 
 if __name__ == "__main__":
     matches = get_brasileirao_matches()
     elo_table = compute_elo_by_round(matches)
-    print("\n📊 Elo Ratings after latest round:")
+    print("Elo Ratings after latest round:")
     print(elo_table.to_string(index=False, formatters={"Elo": "{:.1f}".format}))
 
-# a terminar: gerar tabela de pontos corridos e comparar a posição com a do ranking de elo. alimentar um csv histórico (desafio: resolver os times rebaixados)
+
+def parse_matches(text: str) -> pd.DataFrame:
+    rows = []
+    current_round = None
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        m_round = re.match(r"(\d+)[ªa]*\s+rodada", line, flags=re.I)
+        if m_round:
+            current_round = int(m_round.group(1))
+            continue
+        m_game = re.match(r"(.+?)\s+(\d+)\s*x\s*(\d+)\s+(.+)", line)
+        if m_game and current_round is not None:
+            home = norm(m_game.group(1))
+            hg = int(m_game.group(2))
+            ag = int(m_game.group(3))
+            away = norm(m_game.group(4))
+            rows.append((current_round, home, away, hg, ag))
+    return pd.DataFrame(rows, columns=["Round", "Home", "Away", "hg", "ag"])
+
+def pontos_corridos(df_matches: pd.DataFrame) -> pd.DataFrame:
+    teams = sorted(set(df_matches["Home"]) | set(df_matches["Away"]))
+    table = {t: {"P":0, "V":0, "E":0, "D":0, "GP":0, "GC":0} for t in teams}
+
+    for _, r in df_matches.iterrows():
+        h, a, hg, ag = r["Home"], r["Away"], r["hg"], r["ag"]
+        table[h]["GP"] += hg; table[h]["GC"] += ag
+        table[a]["GP"] += ag; table[a]["GC"] += hg
+        if hg > ag:
+            table[h]["V"] += 1; table[a]["D"] += 1; table[h]["P"] += 3
+        elif hg < ag:
+            table[a]["V"] += 1; table[h]["D"] += 1; table[a]["P"] += 3
+        else:
+            table[h]["E"] += 1; table[a]["E"] += 1
+            table[h]["P"] += 1; table[a]["P"] += 1
+
+    df = pd.DataFrame.from_dict(table, orient="index").reset_index().rename(columns={"index":"Time"})
+    df["SG"] = df["GP"] - df["GC"]
+    df.sort_values(by=["P","SG"], ascending=[False, False], inplace=True)
+    df.reset_index(drop=True, inplace=True)
+    df.index = df.index + 1
+    df.index.name = "pontos corridos"
+    return df[["Time","P","V","E","D","GP","GC","SG"]]
+
+if __name__ == "__main__":
+    matches = parse_matches(raw_text)
+    tabela = pontos_corridos(matches)
+    print(tabela.to_string())
+    tabela.to_csv("tabela_oficial_pontos.csv", index=True, encoding="utf-8-sig")
+
+elo_table_ren = elo_table.rename(columns={"Pos": "Pos_Elo"})
+tabela_ren = tabela.reset_index().rename(columns={"pontos corridos": "Pos_Oficial"})
+
+comparison = pd.merge(tabela_ren, elo_table_ren, left_on="Time", right_on="Team", how="inner")
+comparison["Δ"] = comparison["Pos_Oficial"] - comparison["Pos_Elo"]
+
+comparison.sort_values("Pos_Oficial", inplace=True)
+comparison = comparison[["Time", "Pos_Oficial", "Pos_Elo", "Δ"]]
+
+print("ranking oficial versus Elo:")
+print(comparison.to_string(index=False))
