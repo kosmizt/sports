@@ -115,11 +115,6 @@ def main():
 
     elokelly(e1, e2, o1, o2, m, b, j)
 
-    
-    print(obter_elo_superficie(elo_dict[nome1], "geral"))
-    print(obter_elo_superficie(elo_dict[nome1], "saibro"))
-    print(obter_elo_superficie(elo_dict[nome1], "quadra dura"))
-    print(obter_elo_superficie(elo_dict[nome1], "grama"))
-
 if __name__ == "__main__":
     main()
+
