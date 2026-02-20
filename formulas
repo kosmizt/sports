@@ -166,3 +166,6 @@ df1 = run_scenario(
     results=['A','A','D','B'],
     k_values=k_values, hfa=0
 )
+
+print(df1)
+plt.show()
