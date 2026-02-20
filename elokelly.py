@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 
 def baixar_elos():
-    url = "https://tennisabstract.com/reports/atp_elo_ratings.html"
+    url = "https://tennisabstract.com/reports/atp_elo_ratings.html" #wta data also available!
     resp = requests.get(url)
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "html.parser")
@@ -92,7 +92,7 @@ def elokelly(e1, e2, o1, o2, m, b, j):
 
 
 def main():
-    print("Elo ratings (retirados de tennisabstract.com)")
+    print("Elo ratings (extraídos de tennisabstract.com)")
     elo_dict = baixar_elos()
     print(f"{len(elo_dict)} jogadores carregados.\n")
 
@@ -117,4 +117,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
